@@ -1,0 +1,120 @@
+---
+title: "Credit_Card_Customers"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+date: "2023-01-27"
+---
+##Source: https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers
+
+##import, View Print and Clean Dataset
+```{r}
+library("readr")
+BankChurners<-read.csv("C:/Users/Chaur/OneDrive/Desktop/FML/BankChurners.csv/BankChurners.csv")
+
+View(BankChurners)
+
+Bank_data = subset(BankChurners,select = c(CLIENTNUM,Attrition_Flag,Customer_Age,Gender,Dependent_count,Education_Level,Marital_Status,Income_Category,Card_Category,Months_on_book,Total_Relationship_Count,Months_Inactive_12_mon,Contacts_Count_12_mon,Credit_Limit,Total_Revolving_Bal,Avg_Open_To_Buy,Total_Amt_Chng_Q4_Q1,Total_Trans_Amt,Total_Trans_Ct,Total_Ct_Chng_Q4_Q1,Avg_Utilization_Ratio))
+```
+##Structure of Dataset 
+```{r}
+str(Bank_data)
+```
+##Descriptive stastics
+```{r}
+summary(Bank_data)
+```
+
+## 98th Quantile, Interquantile, standard deviation and variance 
+```{r}
+quantile(Bank_data$Credit_Limit,0.98) ##98th Quantile of Credit_limit
+IQR(Bank_data$Credit_Limit) ## the difference between First and 3rd Quantile
+sd(Bank_data$Credit_Limit) ## standard deviation 
+var(Bank_data$Credit_Limit) ## Variance
+lapply(Bank_data[,15:21],sd)
+lapply(Bank_data[,15:21],var)
+```
+##Transform Variables
+#convert CLIENTNUM from integer into Character since its a Client ID
+```{r}
+Bank_data$Client_ID = as.character(Bank_data$CLIENTNUM)
+class(Bank_data$Client_ID)
+```
+
+##Transform Variables
+#Creating a New variable "Duration_in_Years" based on Months_on_Book
+```{r}
+library(dplyr)
+names(Bank_data)
+Bank_data_2 <- Bank_data %>%
+mutate(Duration_in_year = case_when(Months_on_book < 13 ~ 'New Accounts',
+Months_on_book < 37 ~ ' 3 Year Old',
+Months_on_book < 61 ~ '3-5 year old', TRUE ~ '5+ years Old'))
+names(Bank_data_2)
+unique(Bank_data_2$Duration_in_year)
+```
+## Preparing Data for BarChart 
+```{r}
+bank_data_3 <- Bank_data_2 %>% group_by(Income_Category) %>%
+summarise(avg_credit_limit = mean(Credit_Limit))
+unique(Bank_data_2$Income_Category)
+Bank_data_4 <- bank_data_3 %>%
+mutate(Income_Category2 = recode(Income_Category, "Less than $40K" = 'A.<$40K',
+"$40K - $60K" = 'B.$40K-$60K',
+"$60K - $80K" = 'C.$60K-$80K', 
+"$80K - $120K" = 'D.$80K-$120K',
+"$120K +" = 'E.>$120K',
+Unknown = 'F.Unknown'))
+Bar_graph_data <- subset(Bank_data_4,select = c(Income_Category2,avg_credit_limit)) 
+Bar_graph_data2 = Bar_graph_data[order(Bar_graph_data$Income_Category2),]
+View(Bar_graph_data2)
+````
+## Barchart Credit limit Vs Income 
+```{r}
+main <- par(cex.axis = 0.5, cex.lab = 0.5,cex.sub =0.5, cex.main = 1)
+barplot(Bar_graph_data2$avg_credit_limit,
+main = " Credit Limit By Income",
+xlab = "Income Category ($'000)", 
+ylab = "Average Credit Limit",
+ylim = c(0,20000),
+names.arg = Bar_graph_data2$Income_Category2,
+border = 'Red',
+col = "Blue",
+density = 10)
+````
+## Scatterplot between credit limit Vs Month on Book
+
+```{r}
+main <- par(cex.axis = 0.5, cex.lab = 0.5,cex.sub =0.5, cex.main = 1)
+Scatter_graph = subset(Bank_data , select= c ("Months_on_book","Credit_Limit"))
+Scatter_graph2 <- head(Scatter_graph, n =500)
+View(Scatter_graph2)
+X = Scatter_graph2$Months_on_book
+Y = Scatter_graph2$Credit_Limit
+plot(X,Y,  main = "Credit limit Vs MOB", 
+     xlab = "Month on Books", ylab = "Credit Limit")
+abline(lm(Y ~ X),col="Red")
+````
+```{r}
+main <- par(cex.axis = 0.5, cex.lab = 0.5,cex.sub =0.5, cex.main = 1)
+Scatter_graph = subset(Bank_data , select= c ("Total_Revolving_Bal","Credit_Limit"))
+Scatter_graph2 <- head(Scatter_graph, n =500)
+View(Scatter_graph2)
+X = Scatter_graph2$Total_Revolving_Bal
+Y = Scatter_graph2$Credit_Limit
+plot(X,Y,  main = "Credit limit Vs R. Balance", 
+     xlab = "Revolving Balance", ylab = "Credit Limit")
+abline(lm(Y ~ X),col="Red")
+````
+```{r}
+main <- par(cex.axis = 0.5, cex.lab = 0.5,cex.sub =0.5, cex.main = 1)
+Scatter_graph = subset(Bank_data , select= c ("Customer_Age","Credit_Limit"))
+Scatter_graph2 <- head(Scatter_graph, n =500)
+View(Scatter_graph2)
+X = Scatter_graph2$Customer_Age
+Y = Scatter_graph2$Credit_Limit
+plot(X,Y,  main = "Customer age Vs Credit limit", 
+     xlab = "Customer Age", ylab = "Credit Limit")
+abline(lm(Y ~ X),col="Red")
+````
